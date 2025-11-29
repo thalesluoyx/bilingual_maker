@@ -2,22 +2,30 @@ import asyncio
 import aiohttp
 import json
 import logging
+from pathlib import Path
 from config import Config
+from core.glossary import GlossaryLoader
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class Translator:
-    def __init__(self):
+    def __init__(self, glossary_path: str = None):
         self.semaphore = asyncio.Semaphore(Config.MAX_CONCURRENCY)
         self.headers = Config.get_headers()
         self.base_url = Config.BASE_URL
+        
+        # Load glossary if provided
+        self.glossary = None
+        if glossary_path:
+            self.glossary = GlossaryLoader(glossary_path)
+            logger.info(f"Loaded glossary with {len(self.glossary.glossary)} terms")
         if not self.base_url.endswith('/v1'):
              # Ensure base_url ends with /v1 if needed, or just trust config
              # OpenAI compatible usually is .../v1
              pass
 
-    async def translate(self, text: str, glossary: str = None) -> str:
+    async def translate(self, text: str, use_glossary: bool = True) -> str:
         """
         Translate text using the configured LLM API.
         """
@@ -25,10 +33,17 @@ class Translator:
             return ""
 
         async with self.semaphore:
-            return await self._make_request(text, glossary)
+            return await self._make_request(text, use_glossary)
 
-    async def _make_request(self, text: str, glossary: str = None) -> str:
-        payload = Config.get_payload(text, glossary)
+    async def _make_request(self, text: str, use_glossary: bool = True) -> str:
+        # Extract relevant glossary terms if available
+        specific_glossary = None
+        if use_glossary and self.glossary:
+            relevant_terms = self.glossary.get_relevant_terms(text, max_terms=30)
+            if relevant_terms:
+                specific_glossary = self.glossary.format_for_prompt(relevant_terms)
+        
+        payload = Config.get_payload(text, specific_glossary)
         # Construct URL: assume BASE_URL is the root or the full path?
         # Config says "Base URL + API Key". Usually BASE_URL is like "https://api.openai.com/v1"
         # So we append "/chat/completions"

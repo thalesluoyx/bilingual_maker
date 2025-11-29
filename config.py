@@ -81,6 +81,29 @@ Rules:
     # State file settings
     STATE_FILE_NAME = "pipeline_state.json"
 
+    ORDERED_STEPS = [
+        'prepare_paths',
+        'pdf_to_markdown',
+        'read_markdown',
+        'parse_markdown',
+        'identify_text_blocks',
+        'load_glossary',
+        'translate',
+        'merge_translations',
+        'reconstruct_markdown',
+        'generate_epub'
+    ]
+
+    @staticmethod
+    def get_next_step(current_step):
+        try:
+            idx = Config.ORDERED_STEPS.index(current_step)
+            if idx + 1 < len(Config.ORDERED_STEPS):
+                return Config.ORDERED_STEPS[idx + 1]
+        except ValueError:
+            pass
+        return None
+
     @staticmethod
     def get_headers():
         return {
