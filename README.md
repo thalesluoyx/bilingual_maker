@@ -62,16 +62,18 @@ python main.py input/document.pdf --output my_output
 ```
 
 **Define step order**
-    Step0:   prepare_paths
-    Step1:   pdf_to_markdown
-    Step2:   read_markdown
-    Step3:   parse_markdown
-    Step4:   identify_text_blocks
-    Step4.1: load_glossary
-    Step5:   translate
-    Step6:   merge_translations
-    Step7:   reconstruct_markdown
-    Step8:   generate_epub
+| Step | Name                 | Description                               |
+| ---- | -------------------- | ----------------------------------------- |
+| 0    | prepare_paths        | Prepare paths and directories             |
+| 1    | pdf_to_markdown      | Convert PDF to Markdown (if input is PDF) |
+| 2    | read_markdown        | Read Markdown file                        |
+| 3    | parse_markdown       | Parse and chunk Markdown into blocks      |
+| 4    | identify_text_blocks | Identify text blocks to translate         |
+| 4.1  | load_glossary        | Load astronomy glossary                   |
+| 5    | translate            | Translate text blocks using LLM           |
+| 6    | merge_translations   | Merge translations back into blocks       |
+| 7    | reconstruct_markdown | Reconstruct bilingual Markdown            |
+| 8    | generate_epub        | Generate ePUB from bilingual Markdown     |
         
 
 **Run specific steps:**
