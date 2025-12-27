@@ -3,11 +3,13 @@ import argparse
 import sys
 from datetime import datetime
 from pathlib import Path
+from tqdm.asyncio import tqdm as tqdm_asyncio
 from config import Config
 from core.parser import PDFParser
 from core.processor import MarkdownProcessor, ContentBlock
 from core.translator import Translator
 from core.epub import EpubGenerator
+from core.pdf import PDFGenerator
 from core.state import PipelineState
 
 class DualLogger:
@@ -44,12 +46,16 @@ async def main():
     parser.add_argument("--resume", action="store_true", help="Resume from saved state")
     parser.add_argument("--check", action="store_true", help="Check completed steps from state file")
     parser.add_argument("--state-file", help="Path to state file (default: {output_dir}/pipeline_state.json")
+    parser.add_argument("--format", choices=['epub', 'pdf'], default='epub', help="Output format (epub or pdf)")
     
     args = parser.parse_args()
 
     # Override config if output dir is specified
     if args.output:
         Config.OUTPUT_DIR = args.output
+        
+    if args.format:
+        Config.OUTPUT_FORMAT = args.format
     
     # Configure pipeline steps
     if args.steps:
@@ -196,14 +202,18 @@ async def main():
         glossary_path = None
         if Config.PIPELINE_STEPS.get('load_glossary'):
             print("▶️  Step 4.1: Loading glossary...")
-            glossary_path = Path(Config.ASSETS_DIR) / "astrodict241020_ec.txt"
-            if glossary_path.exists():
-                print(f"✅ Glossary loaded: {glossary_path}")
-                state['glossary_path'] = str(glossary_path)
-                state['last_completed_step'] = 'load_glossary'
-                state_manager.save(state)
+            if Config.GLOSSARY_FILENAME:
+                glossary_path = Path(Config.ASSETS_DIR) / Config.GLOSSARY_FILENAME
+                if glossary_path.exists():
+                    print(f"✅ Glossary loaded: {glossary_path}")
+                    state['glossary_path'] = str(glossary_path)
+                    state['last_completed_step'] = 'load_glossary'
+                    state_manager.save(state)
+                else:
+                    print("⚠️  Glossary file not found")
+                    glossary_path = None
             else:
-                print("⚠️  Glossary file not found")
+                print("ℹ️  Glossary disabled in config")
                 glossary_path = None
         else:
             print("⏭️  Skipping Step 4.1: Load glossary")
@@ -217,7 +227,7 @@ async def main():
             print(f"   Translating {len(text_blocks)} text blocks...")
             
             tasks = [translator.translate(b.content) for b in text_blocks]
-            translations = await asyncio.gather(*tasks)
+            translations = await tqdm_asyncio.gather(*tasks, desc="Translating", unit="block")
             
             state['translations'] = translations
             state['last_completed_step'] = 'translate'
@@ -261,9 +271,9 @@ async def main():
             print("⏭️  Skipping Step 7: Markdown reconstruction")
             bilingual_md_path = state.get('bilingual_md_path')
 
-        # Step 8: Generate ePUB
-        if Config.PIPELINE_STEPS.get('generate_epub'):
-            print("▶️  Step 8: Generating ePUB...")
+        # Step 8: Generate Output
+        if Config.PIPELINE_STEPS.get('generate_output'):
+            print("▶️  Step 8: Generating output document...")
             
             if not bilingual_md_path:
                 bilingual_md_path = state.get('bilingual_md_path')
@@ -272,20 +282,36 @@ async def main():
                 print("❌ Error: Bilingual markdown not found. Run steps 0-7 first.")
                 return
             
-            epub_gen = EpubGenerator()
             output_dir = Path(bilingual_md_path).parent
-            epub_path = output_dir / f"{Path(md_file).stem}_bilingual.epub"
-            try:
-                epub_gen.generate(str(bilingual_md_path), str(epub_path), title=input_path.stem)
-                print(f"✅ ePUB generated successfully: {epub_path}")
-                
-                state['epub_path'] = str(epub_path)
-                state['last_completed_step'] = 'generate_epub'
-                state_manager.save(state)
-            except Exception as e:
-                print(f"❌ ePUB generation failed: {e}")
+            
+            if Config.OUTPUT_FORMAT == 'pdf':
+                print(f"📄 Generating PDF (Engine: xhtml2pdf)...")
+                pdf_gen = PDFGenerator()
+                pdf_path = output_dir / f"{Path(md_file).stem}_bilingual.pdf"
+                try:
+                    pdf_gen.generate(str(bilingual_md_path), str(pdf_path), title=input_path.stem)
+                    print(f"✅ PDF generated successfully: {pdf_path}")
+                    state['pdf_path'] = str(pdf_path)
+                    state['last_completed_step'] = 'generate_output'
+                    state_manager.save(state)
+                except Exception as e:
+                    print(f"❌ PDF generation failed: {e}")
+            else:
+                print(f"📚 Generating ePUB...")
+                epub_gen = EpubGenerator()
+                epub_path = output_dir / f"{Path(md_file).stem}_bilingual.epub"
+                epub_cover_image = output_dir / f"{Path(md_file).stem}_bilingual_cover.png"
+                try:
+                    epub_gen.generate(str(bilingual_md_path), str(epub_path), str(epub_cover_image), title=input_path.stem)
+                    print(f"✅ ePUB generated successfully: {epub_path}")
+                    
+                    state['epub_path'] = str(epub_path)
+                    state['last_completed_step'] = 'generate_output'
+                    state_manager.save(state)
+                except Exception as e:
+                    print(f"❌ ePUB generation failed: {e}")
         else:
-            print("⏭️  Skipping Step 8: ePUB generation")
+            print("⏭️  Skipping Step 8: Output generation")
         
         print("\n🎉 Pipeline completed!")
         print(f"📊 Last completed step: {state.get('last_completed_step', 'none')}") 

@@ -1,11 +1,15 @@
 import pytest
 import asyncio
+from pathlib import Path
+from config import Config
 from core.translator import Translator
 from core.glossary import GlossaryLoader
 
 def test_glossary_loading():
     """Test that glossary loads correctly."""
-    glossary = GlossaryLoader("assets/astrodict241020_ec.txt")
+    filename = Config.GLOSSARY_FILENAME or "astrodict241020_ec.txt"
+    glossary_path = Path(Config.ASSETS_DIR) / filename
+    glossary = GlossaryLoader(str(glossary_path))
     assert len(glossary.glossary) > 0
     
     # Test case-insensitive lookup for redshift
@@ -20,7 +24,9 @@ def test_glossary_loading():
 
 def test_glossary_relevant_terms():
     """Test extraction of relevant terms from text."""
-    glossary = GlossaryLoader("assets/astrodict241020_ec.txt")
+    filename = Config.GLOSSARY_FILENAME or "astrodict241020_ec.txt"
+    glossary_path = Path(Config.ASSETS_DIR) / filename
+    glossary = GlossaryLoader(str(glossary_path))
     
     text = "The redshift of the galaxy indicates it is moving away. Black holes are fascinating."
     relevant = glossary.get_relevant_terms(text)
@@ -32,7 +38,9 @@ def test_glossary_relevant_terms():
 @pytest.mark.asyncio
 async def test_translator_with_glossary():
     """Test translator uses glossary correctly."""
-    translator = Translator("assets/astrodict241020_ec.txt")
+    filename = Config.GLOSSARY_FILENAME or "astrodict241020_ec.txt"
+    glossary_path = Path(Config.ASSETS_DIR) / filename
+    translator = Translator(str(glossary_path))
     
     # Text containing astronomy terms
     text = "The redshift of distant galaxies provides evidence for the expanding universe."

@@ -73,7 +73,7 @@ python main.py input/document.pdf --output my_output
 | 5    | translate            | Translate text blocks using LLM           |
 | 6    | merge_translations   | Merge translations back into blocks       |
 | 7    | reconstruct_markdown | Reconstruct bilingual Markdown            |
-| 8    | generate_epub        | Generate ePUB from bilingual Markdown     |
+| 8    | generate_output      | Generate output file (ePUB or PDF)        |
         
 
 **Run specific steps:**
@@ -84,13 +84,22 @@ python main.py input/document.pdf --steps 0-4
 # Steps 5-7: Translate and create bilingual markdown (resume from previous state)
 python main.py input/document.pdf --steps 5-7 --resume
 
-# Step 8: Generate ePUB only
+# Step 8: Generate ePUB (default)
 python main.py input/document.pdf --steps 8 --resume
+
+# Step 8: Generate PDF
+python main.py input/document.pdf --steps 8 --resume --format pdf
+python main.py input/"Assembly Instructions v1.09.pdf" --steps 8 --resume --format pdf
+
+
 ```
 
 **check pipeline status:**
 ```bash
 python main.py input/document.pdf --check
+python main.py input/"Core J2EE Patterns Best Practices and Design Strategies (2003).pdf" --check
+
+
 ```
 
 **Use presets:**
@@ -128,6 +137,9 @@ python -m pytest tests/test_llm_connectivity.py -s
 
 # Test markdown processor
 python -m pytest tests/test_processor.py
+
+# Test PDF generation with Chinese characters
+python -m pytest tests/test_pdf_gen.py -v
 ```
 
 ## Configuration

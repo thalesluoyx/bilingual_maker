@@ -31,29 +31,65 @@ class Config:
     # Output Settings
     OUTPUT_DIR = "output"
     ASSETS_DIR = "assets"
+    OUTPUT_FORMAT = "epub"  # 'epub' or 'pdf'
+
     
-    # Prompt Settings
-    SYSTEM_PROMPT = """【Strict Instruction】
-You are a professional translator specializing in Astronomy and Astrophysics.
-Translate the following English text into professional Chinese.
-Rules:
-1. Output ONLY the translation. Do not include explanations, notes, or "Here is the translation".
-2. Preserve all Markdown formatting (bold, italic, links, etc.) exactly.
-3. Do not translate code blocks, math formulas (LaTeX), or image paths.
-4. Use the following Glossary for consistency:
-    - Red Shift -> 红移
-    - Event Horizon -> 事件视界
-    - Accretion Disk -> 吸积盘
-    - Black Hole -> 黑洞
-    - Neutron Star -> 中子星
-    - White Dwarf -> 白矮星
-    - Supernova -> 超新星
-    - Dark Matter -> 暗物质
-    - Dark Energy -> 暗能量
-    - Big Bang -> 大爆炸
-    - General Relativity -> 广义相对论
-    - Special Relativity -> 狭义相对论
-"""
+    # Translation Settings
+    ## For astronomy translation
+    # GLOSSARY_FILENAME = "astrodict241020_ec.txt"
+    #     SYSTEM_PROMPT = """【Strict Instruction】
+# You are a professional translator specializing in Astronomy and Astrophysics.
+# Translate the following English text into professional Chinese.
+# Rules:
+# 1. Output ONLY the translation. Do not include explanations, notes, or "Here is the translation".
+# 2. Preserve all Markdown formatting (bold, italic, links, etc.) exactly.
+# 3. Do not translate code blocks, math formulas (LaTeX), or image paths.
+# 4. Use the following Glossary for consistency:
+#     - Red Shift -> 红移
+#     - Event Horizon -> 事件视界
+#     - Accretion Disk -> 吸积盘
+#     - Black Hole -> 黑洞
+#     - Neutron Star -> 中子星
+#     - White Dwarf -> 白矮星
+#     - Supernova -> 超新星
+#     - Dark Matter -> 暗物质
+#     - Dark Energy -> 暗能量
+#     - Big Bang -> 大爆炸
+#     - General Relativity -> 广义相对论
+#     - Special Relativity -> 狭义相对论
+# """
+    
+    ## For Java translation
+    GLOSSARY_FILENAME = None 
+    SYSTEM_PROMPT = """【Strict Instruction】  
+You are a professional translator specializing in Java programming and J2EE Enterprise Architecture.  
+Translate the following English text into professional Chinese.  
+Rules:  
+1. Output ONLY the translation. Do not include explanations, notes, or "Here is the translation".  
+2. Preserve all Markdown formatting (bold, italic, links, etc.) exactly.  
+3. Do not translate code blocks, method names, variable names, or file paths. Keep them strictly in English.  
+4. Use the following Glossary for consistency:  
+    - Dependency Injection (DI) -> 依赖注入  
+    - Inversion of Control (IoC) -> 控制反转  
+    - Aspect-Oriented Programming (AOP) -> 面向切面编程  
+    - Object-Relational Mapping (ORM) -> 对象关系映射  
+    - Garbage Collection (GC) -> 垃圾回收  
+    - Concurrency -> 并发  
+    - Multithreading -> 多线程  
+    - Interface -> 接口  
+    - Implementation -> 实现  
+    - Polymorphism -> 多态  
+    - Container -> 容器  
+    - Deployment -> 部署  
+    - Middleware -> 中间件  
+    - Microservices -> 微服务  
+    - Servlet -> Servlet (不翻译)  
+    - Bean -> Bean (不翻译)  
+    - Schema -> 模式  
+    - Transaction -> 事务  
+"""  
+
+
 
     # Pipeline Step Configuration
     # Control which steps to execute in the pipeline
@@ -67,14 +103,14 @@ Rules:
         'translate': True,               # Step 5: Translate text blocks
         'merge_translations': True,      # Step 6: Merge translations back
         'reconstruct_markdown': True,    # Step 7: Reconstruct bilingual Markdown
-        'generate_epub': True            # Step 8: Generate ePUB
+        'generate_output': True          # Step 8: Generate Output (ePUB/PDF)
     }
     
     # Convenience presets for common workflows
     PIPELINE_PRESETS = {
         'prepare_only': ['prepare_paths', 'pdf_to_markdown', 'read_markdown', 'parse_markdown', 'identify_text_blocks'],
         'translate_only': ['load_glossary', 'translate', 'merge_translations'],
-        'finalize_only': ['reconstruct_markdown', 'generate_epub'],
+        'finalize_only': ['reconstruct_markdown', 'generate_output'],
         'all': list(PIPELINE_STEPS.keys())
     }
     
@@ -91,7 +127,7 @@ Rules:
         'translate',
         'merge_translations',
         'reconstruct_markdown',
-        'generate_epub'
+        'generate_output'
     ]
 
     @staticmethod
@@ -155,7 +191,7 @@ Rules:
             5: 'translate',
             6: 'merge_translations',
             7: 'reconstruct_markdown',
-            8: 'generate_epub'
+            8: 'generate_output'
         }
         
         # Parse range (e.g., "0-4" or "5-7" or "8")

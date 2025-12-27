@@ -79,8 +79,11 @@ class GlossaryLoader:
         return "\n".join(lines)
 
 if __name__ == "__main__":
+    from config import Config
     # Test
-    loader = GlossaryLoader("assets/astrodict241020_ec.txt")
+    filename = Config.GLOSSARY_FILENAME or "astrodict241020_ec.txt"
+    glossary_path = Path(Config.ASSETS_DIR) / filename
+    loader = GlossaryLoader(str(glossary_path))
     print(f"Loaded {len(loader.glossary)} terms")
     
     # Test case-insensitive lookup

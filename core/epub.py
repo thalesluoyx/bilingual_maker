@@ -21,7 +21,7 @@ class EpubGenerator:
             
         # Ensure output directory exists
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        
+        subtitle_text = "致未来的Principal Engineer，苟富贵勿相忘。 -- ThalesLuo"
         cmd = [
             "pandoc",
             str(markdown_path),
@@ -29,6 +29,7 @@ class EpubGenerator:
             "--toc",
             "--standalone",
             "--metadata", f"title={title}",
+            "--metadata", f"subtitle={subtitle_text}", 
             "--resource-path", str(markdown_path.parent) # Ensure images are found
         ]
         
