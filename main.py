@@ -50,45 +50,59 @@ async def main():
     
     args = parser.parse_args()
 
+async def process_single_file(input_file, output_dir=None, preset='all', steps=None, resume=False, check=False, state_file=None, output_format='epub'):
+    """
+    Process a single PDF file through the translation pipeline.
+    
+    Args:
+        input_file (str): Path to input PDF file
+        output_dir (str, optional): Output directory. Defaults to Config.OUTPUT_DIR.
+        preset (str, optional): Pipeline preset. Defaults to 'all'.
+        steps (str, optional): Specific steps to run.
+        resume (bool, optional): Resume from saved state. Defaults to False.
+        check (bool, optional): Check completed steps. Defaults to False.
+        state_file (str, optional): Path to state file.
+        output_format (str, optional): Output format ('epub' or 'pdf'). Defaults to 'epub'.
+    """
     # Override config if output dir is specified
-    if args.output:
-        Config.OUTPUT_DIR = args.output
+    if output_dir:
+        Config.OUTPUT_DIR = output_dir
         
-    if args.format:
-        Config.OUTPUT_FORMAT = args.format
+    if output_format:
+        Config.OUTPUT_FORMAT = output_format
     
     # Configure pipeline steps
-    if args.steps:
-        Config.enable_steps(args.steps)
+    if steps:
+        Config.enable_steps(steps)
     else:
-        Config.apply_preset(args.preset)
+        Config.apply_preset(preset)
     
-    input_path = Path(args.input_file)
+    input_path = Path(input_file)
     
     # Determine output directory and setup logging
     # output_dir = Path(Config.OUTPUT_DIR) / input_path.stem
-    output_dir = Path(Config.OUTPUT_DIR)
-    output_dir.mkdir(parents=True, exist_ok=True)
+    out_dir = Path(Config.OUTPUT_DIR)
+    out_dir.mkdir(parents=True, exist_ok=True)
     
-    log_file = output_dir / f"{input_path.stem}_pipeline.log"   
-    logger = DualLogger(log_file, resume=args.resume)
+    log_file = out_dir / f"{input_path.stem}_pipeline.log"   
+    logger = DualLogger(log_file, resume=resume)
     original_stdout = sys.stdout
     sys.stdout = logger
     
     try:
         # Determine state file path
-        if args.state_file:
-            state_file = Path(args.state_file)
+        if state_file:
+            state_path = Path(state_file)
         else:
-            state_file = output_dir / f"{input_path.stem}_pipeline_state.json"
+            state_path = out_dir / f"{input_path.stem}_pipeline_state.json"
         
         # Initialize state
-        state_manager = PipelineState(str(state_file))
+        state_manager = PipelineState(str(state_path))
         
-        if args.check:
+        if check:
             completed_steps = state_manager.get_completed_steps()
-            print(f"📋 Pipeline Status for: {args.input_file}")
-            print(f"📂 State file: {state_file}")
+            print(f"📋 Pipeline Status for: {input_file}")
+            print(f"📂 State file: {state_path}")
             if completed_steps:
                 print(f"✅ Completed steps ({len(completed_steps)}):")
                 for step in completed_steps:
@@ -100,12 +114,12 @@ async def main():
 
         state = {}
         
-        if args.resume:
+        if resume:
             state = state_manager.load()
             if not state:
                 print("⚠️  No saved state found. Starting from beginning.")
         
-        print(f"🚀 Starting pipeline for: {args.input_file}")
+        print(f"🚀 Starting pipeline for: {input_file}")
         print(f"📋 Active steps: {[step for step, active in Config.PIPELINE_STEPS.items() if active]}")
         
         # Initialize variables from state or defaults
@@ -120,8 +134,8 @@ async def main():
         # Step 0: Prepare paths
         if Config.PIPELINE_STEPS.get('prepare_paths'):
             print("▶️  Step 0: Preparing paths...")
-            print(f"✅ Output directory: {output_dir}")
-            state['output_dir'] = str(output_dir)
+            print(f"✅ Output directory: {out_dir}")
+            state['output_dir'] = str(out_dir)
             state['last_completed_step'] = 'prepare_paths'
             state_manager.save(state)
         else:
@@ -149,7 +163,7 @@ async def main():
                 state_manager.save(state)
             except Exception as e:
                 print(f"❌ PDF Parsing failed: {e}")
-                return
+                raise e # Re-raise to let caller handle or just return
         else:
             if not md_file:
                 # Try to find existing markdown
@@ -302,6 +316,7 @@ async def main():
                     state_manager.save(state)
                 except Exception as e:
                     print(f"❌ PDF generation failed: {e}")
+                    raise e
             else:
                 print(f"📚 Generating ePUB...")
                 epub_gen = EpubGenerator()
@@ -321,6 +336,7 @@ async def main():
                     state_manager.save(state)
                 except Exception as e:
                     print(f"❌ ePUB generation failed: {e}")
+                    raise e
         else:
             print("⏭️  Skipping Step 8: Output generation")
         
@@ -332,11 +348,37 @@ async def main():
         print(f"\n❌ Pipeline failed with error: {e}")
         import traceback
         traceback.print_exc()
+        raise e # Re-raise for batch processor to catch if needed, though we catch above too. 
+        # Actually, for batch processor, we want to know if it failed.
     finally:
         # Restore original stdout and close logger
         sys.stdout = original_stdout
         logger.close()
         print(f"\n📝 Log saved to: {log_file}")
+
+async def main():
+    parser = argparse.ArgumentParser(description="Bilingual ePUB Maker")
+    parser.add_argument("input_file", help="Path to the input PDF file")
+    parser.add_argument("--output", help="Output directory (overrides config)")
+    parser.add_argument("--preset", default="all", choices=list(Config.PIPELINE_PRESETS.keys()), help="Pipeline preset to run")
+    parser.add_argument("--steps", help="Specific steps to run (e.g., '0-4' or '5-8')")
+    parser.add_argument("--resume", action="store_true", help="Resume from saved state")
+    parser.add_argument("--check", action="store_true", help="Check completed steps from state file")
+    parser.add_argument("--state-file", help="Path to state file (default: {output_dir}/pipeline_state.json")
+    parser.add_argument("--format", choices=['epub', 'pdf'], default='epub', help="Output format (epub or pdf)")
+    
+    args = parser.parse_args()
+
+    await process_single_file(
+        input_file=args.input_file,
+        output_dir=args.output,
+        preset=args.preset,
+        steps=args.steps,
+        resume=args.resume,
+        check=args.check,
+        state_file=args.state_file,
+        output_format=args.format
+    )
 
 if __name__ == "__main__":
     asyncio.run(main())

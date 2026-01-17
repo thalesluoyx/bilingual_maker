@@ -1,0 +1,11 @@
+{
+    "description": "Batch processing configuration",
+    "files": [
+        {
+            "filename": "Sample_Eng1.pdf"
+        },
+        {
+            "filename": "Sample_Eng3.pdf"
+        }
+    ]
+}

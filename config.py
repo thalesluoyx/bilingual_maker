@@ -33,6 +33,10 @@ class Config:
     ASSETS_DIR = "assets"
     OUTPUT_FORMAT = "epub"  # 'epub' or 'pdf'
 
+    # Batch Processing Settings
+    BATCH_INPUT_DIR = "input/pipeline"
+    BATCH_OUTPUT_DIR = "output/pipeline"
+
     
     # Translation Settings
     # For astronomy translation

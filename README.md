@@ -114,6 +114,39 @@ python main.py input/document.pdf --preset translate_only --resume
 
 ```
 
+### Batch Processing
+
+Process multiple PDF files sequentially using the batch runner.
+
+**1. Prepare Files:**
+Place your PDF files in `input/pipeline`.
+
+**2. Run Batch:**
+```bash
+python batch_runner.py
+```
+This will process all PDFs in `input/pipeline` one by one.
+
+**3. Configuration (Optional):**
+Create a JSON configuration file (e.g., `batch_config.json`) to specify which files to process:
+```json
+{
+    "files": [
+        {"filename": "file1.pdf"},
+        {"filename": "file2.pdf"}
+    ]
+}
+```
+Run with config:
+```bash
+python batch_runner.py --config batch_config.json
+```
+
+**4. Output:**
+- Translated files will be in `output/pipeline/<filename>/`.
+- A batch log file `batch_run_<timestamp>.log` will be created in `output/pipeline/`.
+
+
 ## Glossary
 
 The system includes an astronomy glossary (`assets/astrodict241020_ec.txt`) with 29,936 terms. The glossary ensures consistent translation of technical terms:
@@ -175,3 +208,5 @@ MIT License
 ## Contributing
 
 Contributions welcome! Please open an issue or submit a pull request.
+
+
