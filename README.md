@@ -80,9 +80,11 @@ python main.py input/document.pdf --output my_output
 ```bash
 # Steps 0-4: Parse PDF and prepare for translation
 python main.py input/document.pdf --steps 0-4
+python main.py input/"Assembly Instructions v1.09.pdf" 
 
 # Steps 5-7: Translate and create bilingual markdown (resume from previous state)
 python main.py input/document.pdf --steps 5-7 --resume
+python main.py input/"Assembly Instructions v1.09.pdf" --steps 5-7 --resume
 
 # Step 8: Generate ePUB (default)
 python main.py input/document.pdf --steps 8 --resume

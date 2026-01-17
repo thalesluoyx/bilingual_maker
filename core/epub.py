@@ -21,7 +21,7 @@ class EpubGenerator:
             
         # Ensure output directory exists
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        subtitle_text = "致未来的Principal Engineer，苟富贵勿相忘。 -- ThalesLuo"
+        subtitle_text = "Empowered by AI, supported by ThalesLuo"
         cmd = [
             "pandoc",
             str(markdown_path),

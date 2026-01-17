@@ -138,6 +138,12 @@ async def main():
             try:
                 md_file = pdf_parser.parse(str(input_path))
                 print(f"✅ Markdown generated at: {md_file}")
+                
+                # Extract cover image
+                cover_path = Path(md_file).parent / f"{Path(md_file).stem}_bilingual_cover.png"
+                if pdf_parser.extract_cover(str(input_path), str(cover_path)):
+                    state['cover_image'] = str(cover_path)
+                
                 state['md_file'] = md_file
                 state['last_completed_step'] = 'pdf_to_markdown'
                 state_manager.save(state)
@@ -300,7 +306,12 @@ async def main():
                 print(f"📚 Generating ePUB...")
                 epub_gen = EpubGenerator()
                 epub_path = output_dir / f"{Path(md_file).stem}_bilingual.epub"
-                epub_cover_image = output_dir / f"{Path(md_file).stem}_bilingual_cover.png"
+                
+                # Use cover image from state if available, otherwise try default path
+                epub_cover_image = state.get('cover_image')
+                if not epub_cover_image or not Path(epub_cover_image).exists():
+                    epub_cover_image = output_dir / f"{Path(md_file).stem}_bilingual_cover.png"
+                
                 try:
                     epub_gen.generate(str(bilingual_md_path), str(epub_path), str(epub_cover_image), title=input_path.stem)
                     print(f"✅ ePUB generated successfully: {epub_path}")

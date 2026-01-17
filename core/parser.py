@@ -55,6 +55,37 @@ class PDFParser:
         # Return the first found markdown file (usually the main one)
         return str(md_files[0])
 
+    def extract_cover(self, pdf_path: str, output_path: str) -> bool:
+        """
+        Extract the first page of the PDF as a cover image.
+        """
+        import fitz
+        pdf_path = Path(pdf_path)
+        output_path = Path(output_path)
+        
+        if not pdf_path.exists():
+            print(f"⚠️ PDF file not found for cover extraction: {pdf_path}")
+            return False
+            
+        try:
+            print(f"🎨 Extracting cover image from: {pdf_path}...")
+            doc = fitz.open(str(pdf_path))
+            if doc.page_count > 0:
+                page = doc[0]
+                # Use higher resolution for better quality
+                pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))
+                pix.save(str(output_path))
+                doc.close()
+                print(f"✅ Cover image saved to: {output_path}")
+                return True
+            else:
+                print(f"⚠️ PDF has no pages: {pdf_path}")
+                doc.close()
+                return False
+        except Exception as e:
+            print(f"⚠️ Failed to extract cover image: {e}")
+            return False
+
 if __name__ == "__main__":
     # Test
     import sys
