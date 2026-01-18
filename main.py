@@ -246,13 +246,16 @@ async def process_single_file(input_file, output_dir=None, preset='all', steps=N
             text_blocks = [b for b in blocks if b.type == 'text']
             print(f"   Translating {len(text_blocks)} text blocks...")
             
-            tasks = [translator.translate(b.content) for b in text_blocks]
-            translations = await tqdm_asyncio.gather(*tasks, desc="Translating", unit="block")
-            
-            state['translations'] = translations
-            state['last_completed_step'] = 'translate'
-            state_manager.save(state)
-            print("✅ Translation complete.")
+            try:
+                tasks = [translator.translate(b.content) for b in text_blocks]
+                translations = await tqdm_asyncio.gather(*tasks, desc="Translating", unit="block")
+                
+                state['translations'] = translations
+                state['last_completed_step'] = 'translate'
+                state_manager.save(state)
+                print("✅ Translation complete.")
+            finally:
+                await translator.close()
         else:
             print("⏭️  Skipping Step 5: Translation")
             translations = state.get('translations', [])

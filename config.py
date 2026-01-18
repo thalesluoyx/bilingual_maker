@@ -25,7 +25,7 @@ class Config:
 
     # Translation Settings
     MAX_CONCURRENCY = int(os.getenv("MAX_CONCURRENCY", "5"))
-    TIMEOUT_SECONDS = int(os.getenv("TIMEOUT_SECONDS", "60"))
+    TIMEOUT_SECONDS = int(os.getenv("TIMEOUT_SECONDS", "120"))
     RETRY_ATTEMPTS = int(os.getenv("RETRY_ATTEMPTS", "3"))
     
     # Output Settings

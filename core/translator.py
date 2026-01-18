@@ -15,6 +15,10 @@ class Translator:
         self.headers = Config.get_headers()
         self.base_url = Config.BASE_URL
         
+        # Use TCPConnector with DNS caching (TTL=300s)
+        connector = aiohttp.TCPConnector(ttl_dns_cache=300)
+        self.session = aiohttp.ClientSession(connector=connector)
+        
         # Load glossary if provided
         self.glossary = None
         if glossary_path:
@@ -39,7 +43,7 @@ class Translator:
         # Extract relevant glossary terms if available
         specific_glossary = None
         if use_glossary and self.glossary:
-            relevant_terms = self.glossary.get_relevant_terms(text, max_terms=30)
+            relevant_terms = self.glossary.get_relevant_terms(text, max_terms=50)
             if relevant_terms:
                 specific_glossary = self.glossary.format_for_prompt(relevant_terms)
         
@@ -51,8 +55,7 @@ class Translator:
         
         for attempt in range(Config.RETRY_ATTEMPTS):
             try:
-                async with aiohttp.ClientSession() as session:
-                    async with session.post(url, headers=self.headers, json=payload, timeout=Config.TIMEOUT_SECONDS) as response:
+                async with self.session.post(url, headers=self.headers, json=payload, timeout=Config.TIMEOUT_SECONDS) as response:
                         if response.status == 200:
                             data = await response.json()
                             if 'choices' in data and len(data['choices']) > 0:
@@ -78,6 +81,10 @@ class Translator:
                 await asyncio.sleep(1)
         
         return "[Translation Failed]"
+
+    async def close(self):
+        if self.session:
+            await self.session.close()
 
 if __name__ == "__main__":
     # Test
